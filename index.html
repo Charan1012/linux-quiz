@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Systems Mastery Exam</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f4f4f9; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.5; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; }
+        h1 { color: #2c3e50; font-size: 24px; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; }
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+        .option { display: block; background: #ecf0f1; padding: 15px; margin-bottom: 10px; border-radius: 6px; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
+        .option:hover { background: #e0e6ed; }
+        .option.selected { border-color: #3498db; background: #e8f4fd; } /* Neutral selection color */
+        .btn { background: #3498db; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 6px; cursor: pointer; margin-top: 20px; }
+        .btn:hover { background: #2980b9; }
+        .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .hidden { display: none; }
+        #progress { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; font-weight: bold; }
+        
+        /* Review Screen Styles */
+        .review-item { margin-bottom: 20px; padding: 15px; border-radius: 6px; border-left: 5px solid #ccc; background: #fdfdfd; }
+        .review-item.correct { border-left-color: #2ecc71; }
+        .review-item.incorrect { border-left-color: #e74c3c; }
+        .review-q { font-weight: bold; margin-bottom: 8px; }
+        .review-ans { font-size: 14px; margin-bottom: 4px; }
+        .text-green { color: #27ae60; font-weight: bold; }
+        .text-red { color: #c0392b; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="quiz-container">
+        <h1>Linux Systems Mastery Exam</h1>
+        <div id="progress">Question 1 of 60</div>
+        <div id="question" class="question-text">Loading question...</div>
+        <div id="options"></div>
+        <button id="next-btn" class="btn" disabled>Next Question</button>
+    </div>
+
+    <div class="card hidden" id="results-container">
+        <h1>Exam Complete!</h1>
+        <p class="question-text">Final Score: <span id="score">0</span> / 60</p>
+        <button class="btn" onclick="location.reload()" style="margin-bottom: 30px;">Retake Exam</button>
+        <div id="review-list"></div>
+    </div>
+
+    <script>
+        const quizData = [
+            // Part 1: Architecture
+            { q: "Which layer of the Linux architecture interacts directly with the hardware?", opts: ["Shell", "Kernel", "System Utilities", "Applications"], ans: 1 },
+            { q: "What is the standard directory for essential user command binaries (like `ls` or `cat`)?", opts: ["/etc", "/var", "/bin", "/opt"], ans: 2 },
+            { q: "Which space does the kernel execute in?", opts: ["User Space", "Kernel Space", "Swap Space", "Virtual Space"], ans: 1 },
+            { q: "What does the FHS (Filesystem Hierarchy Standard) define?", opts: ["Network protocols", "Directory structure", "Process scheduling", "User permissions"], ans: 1 },
+            { q: "What is the role of the bootloader (like GRUB) in Linux?", opts: ["Mounts /var", "Loads the kernel into memory", "Manages user accounts", "Compiles source code"], ans: 1 },
+            { q: "In Linux, 'everything is a...'?", opts: ["Process", "File", "Directory", "Daemon"], ans: 1 },
+            { q: "Which component provides the user interface to interact with the kernel?", opts: ["Bootloader", "Shell", "Daemons", "Libraries"], ans: 1 },
+            { q: "What is the primary function of system calls?", opts: ["Connect to the internet", "Request services from the kernel", "Format disk partitions", "Run background tasks"], ans: 1 },
+            { q: "Where are static configuration files primarily stored?", opts: ["/etc", "/tmp", "/dev", "/home"], ans: 0 },
+            { q: "Which systemd target represents a multi-user mode with networking and a GUI?", opts: ["graphical.target", "multi-user.target", "rescue.target", "default.target"], ans: 0 },
+
+            // Part 2: File Management
+            { q: "Which command searches for files in a directory hierarchy based on attributes like name or size?", opts: ["grep", "awk", "find", "locate"], ans: 2 },
+            { q: "What does `ls -la` display?", opts: ["Only hidden files", "Detailed list including hidden files", "Symlinks only", "Directories only"], ans: 1 },
+            { q: "How do you create a hard link named `link1` to `file1`?", opts: ["ln -s file1 link1", "ln file1 link1", "link file1 link1", "mklink file1 link1"], ans: 1 },
+            { q: "Which command prints the absolute path of the current working directory?", opts: ["cwd", "pwd", "cd", "dir"], ans: 1 },
+            { q: "What does the `touch` command do if the target file already exists?", opts: ["Deletes it", "Updates its access and modification timestamps", "Overwrites it with zero bytes", "Returns an error"], ans: 1 },
+            { q: "Which command extracts a gzip-compressed tar archive (`archive.tar.gz`)?", opts: ["tar -xvf", "tar -cvf", "tar -zcvf", "tar -zxvf"], ans: 3 },
+            { q: "What command displays the last 10 lines of a file by default?", opts: ["head", "tail", "less", "cat"], ans: 1 },
+            { q: "How do you append both standard output (`stdout`) and standard error (`stderr`) to a file?", opts: ["> file", "2> file", ">> file 2>&1", "1>&2 file"], ans: 2 },
+            { q: "Which tool is primarily designed for column-based text extraction and reporting?", opts: ["sed", "awk", "grep", "sort"], ans: 1 },
+            { q: "What command updates the database used by the `locate` command?", opts: ["update-db", "updatedb", "refresh-locate", "locate-update"], ans: 1 },
+
+            // Part 3: Process Management
+            { q: "Which command displays an interactive, real-time view of system processes and resource usage?", opts: ["ps", "top", "free", "df"], ans: 1 },
+            { q: "What is the default signal sent by the `kill` command if no flag is specified?", opts: ["SIGKILL (9)", "SIGTERM (15)", "SIGINT (2)", "SIGHUP (1)"], ans: 1 },
+            { q: "What state is a process in if it has completed execution but still has an entry in the process table?", opts: ["Sleeping", "Stopped", "Zombie", "Orphan"], ans: 2 },
+            { q: "Which command changes the scheduling priority of a process that is already running?", opts: ["nice", "renice", "chrt", "taskset"], ans: 1 },
+            { q: "What is the PID of the first process started by the kernel during boot (e.g., systemd or init)?", opts: ["0", "1", "-1", "2"], ans: 1 },
+            { q: "How do you move a foreground running job to the background in bash?", opts: ["Press Ctrl+Z, then type `bg`", "Press Ctrl+C, then type `bg`", "Press Ctrl+D", "Type `&`"], ans: 0 },
+            { q: "Which command lists all open files and the processes that opened them?", opts: ["fdisk", "lsblk", "lsof", "netstat"], ans: 2 },
+            { q: "What does `ps aux` do?", opts: ["Shows processes for the current user", "Shows all processes running on the system", "Shows network processes", "Shows zombie processes only"], ans: 1 },
+            { q: "Which signal forcefully terminates a process and cannot be caught, blocked, or ignored?", opts: ["SIGTERM", "SIGSTOP", "SIGKILL", "SIGQUIT"], ans: 2 },
+            { q: "What tool allows you to run a command that keeps running even after you close the SSH session?", opts: ["nohup", "keep", "bg", "exec"], ans: 0 },
+
+            // Part 4: Memory Management
+            { q: "Which command displays the total amount of free and used physical memory and swap space?", opts: ["df", "du", "free", "meminfo"], ans: 2 },
+            { q: "What is 'swap' space in Linux?", opts: ["Space on disk used as virtual memory when RAM is full", "A backup partition", "CPU cache", "Space for temporary files"], ans: 0 },
+            { q: "Which virtual file contains detailed, raw information about system memory?", opts: ["/etc/memory", "/proc/meminfo", "/sys/memory", "/dev/mem"], ans: 1 },
+            { q: "What does the 'buff/cache' column in the `free` command output represent?", opts: ["Memory reserved for the kernel", "Memory used by active processes", "Memory used by the kernel to cache disk data for faster access", "Memory that is permanently locked"], ans: 2 },
+            { q: "What is the primary purpose of the OOM (Out Of Memory) Killer?", opts: ["To add more swap space", "To terminate processes to free up memory", "To compress RAM", "To safely reboot the system"], ans: 1 },
+            { q: "Which tool reports comprehensive virtual memory statistics, including swap in/out metrics?", opts: ["vmstat", "iostat", "mpstat", "sar"], ans: 0 },
+            { q: "What happens if a system constantly swaps pages heavily in and out of disk due to lack of RAM?", opts: ["Thrashing, causing severe performance degradation", "Improved CPU utilization", "Disk defragmentation", "RAM automatically expands"], ans: 0 },
+            { q: "Which kernel parameter adjusts the system's tendency to utilize swap space versus dropping pagecache?", opts: ["swappiness", "swap_ratio", "vm_swap", "mem_swap"], ans: 0 },
+            { q: "How can you safely clear the pagecache manually (running as root)?", opts: ["echo 1 > /proc/sys/vm/drop_caches", "rm -rf /cache", "swapoff -a", "clear_mem"], ans: 0 },
+            { q: "What does the `RES` column indicate in the `top` command output?", opts: ["Resident set size (physical memory actively used)", "Virtual memory mapped", "Shared memory", "Swap memory used"], ans: 0 },
+
+            // Part 5: Disk Management
+            { q: "Which command prints a tree-like list of all available block devices (disks and partitions)?", opts: ["fdisk", "lsblk", "mount", "df"], ans: 1 },
+            { q: "What command reports file system disk space usage across mounted partitions?", opts: ["du", "df", "ls", "stat"], ans: 1 },
+            { q: "Which utility is used to create a new ext4 filesystem on an existing partition?", opts: ["mkfs.ext4", "fdisk -t ext4", "mount.ext4", "fsck.ext4"], ans: 0 },
+            { q: "What file is used to configure filesystems and partitions to mount automatically at system boot?", opts: ["/etc/mtab", "/etc/fstab", "/etc/mounts", "/etc/drives"], ans: 1 },
+            { q: "What does LVM stand for?", opts: ["Logical Volume Manager", "Linux Virtual Memory", "Local Volume Mount", "Linux Volume Monitor"], ans: 0 },
+            { q: "In LVM, what groups multiple Physical Volumes (PVs) into a single, unified storage pool?", opts: ["Logical Volume (LV)", "Volume Group (VG)", "Storage Pool (SP)", "Virtual Disk (VD)"], ans: 1 },
+            { q: "Which command checks and repairs an unmounted Linux filesystem?", opts: ["fsck", "chkdsk", "defrag", "tune2fs"], ans: 0 },
+            { q: "What is an inode in a Linux filesystem?", opts: ["A network socket", "A data structure storing metadata about a file", "A disk sector", "A kernel module"], ans: 1 },
+            { q: "What happens when a filesystem runs out of inodes, even if there are gigabytes of free space left?", opts: ["The disk expands automatically", "You cannot create any new files", "Existing files are compressed", "The oldest files are deleted"], ans: 1 },
+            { q: "Which command estimates the disk space used by a specific directory and its subdirectories?", opts: ["df", "du", "lsblk", "parted"], ans: 1 },
+
+            // Part 6: Networking & Advanced Permissions
+            { q: "Which command is the modern replacement for `ifconfig` used to show or manipulate IP addresses?", opts: ["ip addr", "netstat", "route", "ss"], ans: 0 },
+            { q: "Which tool is standard for capturing and analyzing network packets from the command line?", opts: ["ping", "traceroute", "tcpdump", "nmap"], ans: 2 },
+            { q: "What is the primary use of the `ss` command?", opts: ["Secures shell sessions", "Dumps socket statistics (replacing netstat)", "Starts a service", "Shows disk usage"], ans: 1 },
+            { q: "How do you add execute permissions exclusively for the user/owner of a file named `script.sh`?", opts: ["chmod u+x script.sh", "chmod +e script.sh", "chown u+x script.sh", "chmod 700 script.sh"], ans: 0 },
+            { q: "What does the SUID bit do when set on an executable file?", opts: ["Prevents deletion by non-owners", "Executes the file with the privileges of the file's owner", "Shares the file with the group", "Makes the file immutable"], ans: 1 },
+            { q: "What permission behavior does a directory exhibit if its Sticky Bit is set (e.g., `/tmp`)?", opts: ["Only the file owner, dir owner, or root can rename/delete files", "No one can write to it", "All files created inherit the directory's group", "Files cannot be read"], ans: 0 },
+            { q: "Which command defines the default permission mask applied to newly created files and directories?", opts: ["chattr", "umask", "chmod", "setfacl"], ans: 1 },
+            { q: "If the current `umask` is `022`, what are the default permissions of a newly created text file?", opts: ["755 (rwxr-xr-x)", "644 (rw-r--r--)", "666 (rw-rw-rw-)", "777 (rwxrwxrwx)"], ans: 1 },
+            { q: "Which command allows you to view detailed Access Control Lists (ACLs) applied to a file?", opts: ["setfacl", "getfacl", "ls -acl", "viewacl"], ans: 1 },
+            { q: "What does the `chattr +i` command do to a file?", opts: ["Makes it hidden", "Makes it immutable (cannot be modified by anyone)", "Increases its process priority", "Changes its owner to root"], ans: 1 }
+        ];
+
+        let currentQuestion = 0;
+        let selectedOption = null;
+        let userAnswers = []; // Store user's choices
+
+        const questionEl = document.getElementById("question");
+        const optionsEl = document.getElementById("options");
+        const nextBtn = document.getElementById("next-btn");
+        const progressEl = document.getElementById("progress");
+        const quizContainer = document.getElementById("quiz-container");
+        const resultsContainer = document.getElementById("results-container");
+        const scoreEl = document.getElementById("score");
+        const reviewListEl = document.getElementById("review-list");
+
+        function loadQuestion() {
+            selectedOption = null;
+            nextBtn.disabled = true;
+            optionsEl.innerHTML = "";
+            
+            const currentQuizData = quizData[currentQuestion];
+            progressEl.innerText = `Question ${currentQuestion + 1} of ${quizData.length}`;
+            questionEl.innerText = currentQuizData.q;
+
+            currentQuizData.opts.forEach((optionText, index) => {
+                const div = document.createElement("div");
+                div.innerText = optionText;
+                div.classList.add("option");
+                
+                div.onclick = () => {
+                    // Remove selection from all
+                    document.querySelectorAll(".option").forEach(opt => opt.classList.remove("selected"));
+                    // Select current
+                    div.classList.add("selected");
+                    selectedOption = index;
+                    nextBtn.disabled = false; // Enable next button
+                };
+                
+                optionsEl.appendChild(div);
+            });
+        }
+
+        function showResults() {
+            quizContainer.classList.add("hidden");
+            resultsContainer.classList.remove("hidden");
+            
+            let score = 0;
+            let reviewHTML = "";
+
+            quizData.forEach((qData, index) => {
+                const userAnsIndex = userAnswers[index];
+                const isCorrect = (userAnsIndex === qData.ans);
+                if (isCorrect) score++;
+
+                const userAnswerText = userAnsIndex !== null ? qData.opts[userAnsIndex] : "No Answer";
+                const correctAnswerText = qData.opts[qData.ans];
+
+                reviewHTML += `
+                    <div class="review-item ${isCorrect ? 'correct' : 'incorrect'}">
+                        <div class="review-q">${index + 1}. ${qData.q}</div>
+                        <div class="review-ans"><strong>Your Answer:</strong> <span class="${isCorrect ? 'text-green' : 'text-red'}">${userAnswerText}</span></div>
+                        ${!isCorrect ? `<div class="review-ans"><strong>Correct Answer:</strong> <span class="text-green">${correctAnswerText}</span></div>` : ""}
+                    </div>
+                `;
+            });
+
+            scoreEl.innerText = score;
+            reviewListEl.innerHTML = reviewHTML;
+        }
+
+        nextBtn.addEventListener("click", () => {
+            if (selectedOption === null) return; // Prevent advancing without selection
+            
+            userAnswers.push(selectedOption); // Save answer
+            currentQuestion++;
+            
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults(); // Exam finished
+            }
+        });
+
+        // Start Quiz
+        loadQuestion();
+    </script>
+</body>
+</html>
